@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\MaFi.WebShareCz.ApiClient.targets" />
+  
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>MaFi.WebShareCz.ApiClient</AssemblyName>
+    <RootNamespace>MaFi.WebShareCz.ApiClient</RootNamespace>
+    <Description>API client for access files in WebShare.cz store.</Description>    
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageProjectUrl>https://github.com/ficnar/WebShareCz.ApiClient</PackageProjectUrl>
+    <PackageTags>.net WebShare.cz-Api-Client</PackageTags>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
+
+</Project>
