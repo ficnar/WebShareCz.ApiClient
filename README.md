@@ -12,7 +12,7 @@ MaFi.WebShareCz.ApiClient is a .NET Standard 2.0 library with API Client for acc
 Install-Package MaFi.WebShareCz.ApiClient
 ```
 
-# WebShare.cz
+## WebShare.cz
 
 For store files must have acount on WebShare.cz
 More infos: [WebShare.cz Pages](https://webshare.cz)
