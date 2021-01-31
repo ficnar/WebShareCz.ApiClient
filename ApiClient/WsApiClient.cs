@@ -10,6 +10,7 @@ using MaFi.WebShareCz.ApiClient.Entities;
 using MaFi.WebShareCz.ApiClient.Http;
 using System.Security.Authentication;
 using MaFi.WebShareCz.ApiClient.Security;
+using System.Net;
 
 namespace MaFi.WebShareCz.ApiClient
 {
@@ -239,9 +240,9 @@ namespace MaFi.WebShareCz.ApiClient
             }
 
             MultipartFormDataContent form = new MultipartFormDataContent();
-            form.Add(new StringContent(targetFilePath.Name), "name");
+            form.Add(new StringContent(WebUtility.UrlEncode(targetFilePath.Name)), "name");
             form.Add(new StringContent(_loginInfo.LoginToken), "wst");
-            form.Add(new StringContent(targetFilePath.Folder.FullPath), "folder");
+            form.Add(new StringContent(WebUtility.UrlEncode(targetFilePath.Folder.FullPath)), "folder");
             form.Add(new StringContent(targetFilePath.IsPrivate ? "1" : "0"), "private");
             form.Add(new StringContent("0"), "adult");
             form.Add(new StringContent(sourceSize.ToString()), "total");
