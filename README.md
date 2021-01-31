@@ -14,5 +14,6 @@ Install-Package MaFi.WebShareCz.ApiClient
 
 ## WebShare.cz
 
-For store files must have acount on WebShare.cz
+For store files must have an account on cloud WebShare.cz
+
 More infos: [WebShare.cz Pages](https://webshare.cz)
