@@ -11,6 +11,29 @@ MaFi.WebShareCz.ApiClient is a .NET Standard 2.0 library with API Client for acc
 ```powershell
 Install-Package MaFi.WebShareCz.ApiClient
 ```
+## Using
+
+Main entry point for using this component is create an instance of the class:
+
+```C#
+namespace MaFi.WebShareCz.ApiClient
+{
+	public class WsApiClient {}
+}
+```
+
+Next, you must ensure user login by method:
+
+```C#
+public Task<bool> Login(string userName, ISecretProvider secretProvider, ISecretPersistor secretPersistor = null) {}
+```
+
+Then you can use property for access private and public root folder:
+
+```C#
+public WsFolder PrivateRootFolder { get; }
+public WsFolder PublicRootFolder { get; }
+```
 
 ## WebShare.cz
 
