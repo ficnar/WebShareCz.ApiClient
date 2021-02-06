@@ -55,6 +55,11 @@ namespace MaFi.WebShareCz.ApiClient.Entities
         {
             return ApiClient.GetFolderAllFilesRecursive(PathInfo, depth);
         }
+        
+        public Task<WsFilesPreviewReader> GetFilesPreview()
+        {
+            return ApiClient.GetFolderFilesPreview(this);
+        }
 
         public Task<WsFile> UploadFile(FileStream sourceStream, string fileName, CancellationToken cancellationToken, IProgress<int> progress = null)
         {

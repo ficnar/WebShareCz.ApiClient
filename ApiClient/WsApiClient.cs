@@ -22,6 +22,7 @@ namespace MaFi.WebShareCz.ApiClient
         private static readonly Uri API_LOGIN_URI = new Uri(API_URI, "login/");
         private static readonly Uri API_LOGOUT_URI = new Uri(API_URI, "logout/");
         private static readonly Uri API_FILES_URI = new Uri(API_URI, "files/");
+        private static readonly Uri API_FOLDER_URI = new Uri(API_URI, "folder/");
         private static readonly Uri API_FILE_LINK_URI = new Uri(API_URI, "file_link/");
         private static readonly Uri API_UPLOAD_URL_URI = new Uri(API_URI, "upload_url/");
         private static readonly Uri API_REMOVE_FILE_URI = new Uri(API_URI, "remove_file/");
@@ -385,6 +386,28 @@ namespace MaFi.WebShareCz.ApiClient
         internal Task<WsItemsReaderEngine> GetItem(WsFilePath filePath, bool useCreatedFileResolver)
         {
             return GetItemsOrItem(filePath, true, useCreatedFileResolver);
+        }
+
+        internal async Task<WsFilesPreviewReader> GetFolderFilesPreview(WsFolder folder)
+        {
+            if (folder == null)
+                throw new ArgumentNullException(nameof(folder));
+            CheckConnected();
+
+            Task<WsFilesReader> filesReaderTask = folder.GetAllFilesRecursive(0);
+            WsFilesPreviewReaderEngine readerEngine = await PostFormDataWithLoginRetry(async () =>
+            {
+                FormUrlEncodedContent formContent = CreateFormContent(new[]
+                {
+                            new KeyValuePair<string, string>("ident", folder.Ident),
+                            new KeyValuePair<string, string>("limit", "99999999"),
+                            //new KeyValuePair<string, string>("offset", "0")
+                            });
+                HttpResponseMessage response = await _httpClient.PostFormData(API_FOLDER_URI, formContent);
+                return await WsFilesPreviewReaderEngine.Create(_httpClient, filesReaderTask, response);
+            });
+            CheckResultStatus(readerEngine);
+            return new WsFilesPreviewReader(readerEngine);
         }
 
         private async Task<WsItemsReaderEngine> GetItemsOrItem(WsItemPath path, bool onlyOne, bool useCreatedFileResolver)
