@@ -8,7 +8,7 @@
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
-  <PropertyGroup Condition="Exists('..\..\Private\MaFi.snk')">
+  <PropertyGroup Condition="Exists('..\Private\MaFi.snk')">
     <AssemblyOriginatorKeyFile>..\..\Private\MaFi.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
