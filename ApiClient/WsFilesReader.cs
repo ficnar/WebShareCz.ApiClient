@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace MaFi.WebShareCz.ApiClient
 {
-    public class WsFilesReader : WsItemsReader
+    public sealed class WsFilesReader : WsItemsReader
     {
         private readonly WsItemsReaderEngine _readerEngine;
         private readonly int _depth;

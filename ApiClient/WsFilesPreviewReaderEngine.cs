@@ -18,7 +18,7 @@ namespace MaFi.WebShareCz.ApiClient
         private XmlNodeReader _xmlReader;
         private bool _getItemsInvoked = false;
         private bool _disposed = false;
-        private string[] _fileIdents = null;
+        private List<string> _fileIdents = null;
 
         public static async Task<WsFilesPreviewReaderEngine> Create(WsHttpClient httpClient, Task<WsFilesReader> filesReaderTask, HttpResponseMessage responseMessage)
         {
@@ -27,7 +27,7 @@ namespace MaFi.WebShareCz.ApiClient
             xml.Load(await engine._responseMessage.Content.ReadAsStreamAsync());
             engine._xmlReader = new XmlNodeReader(xml.DocumentElement);
 
-            if (engine._xmlReader.Read() && engine.ReadNextElement(out _) == ROOT_ELEMENT_NAME && engine.ReadNextElement(out string status) == "status")
+            if (engine._xmlReader.Read() && engine._xmlReader.Name == ROOT_ELEMENT_NAME && engine._xmlReader.Read() && engine.ReadNextElement(out string status) == "status")
             {
                 engine.Status = status;
                 if (engine.Status != ResultStatus.OK)
@@ -36,7 +36,7 @@ namespace MaFi.WebShareCz.ApiClient
                         engine.ErrorCode = errorCode;
                     engine.Dispose();
                 }
-                if (engine.ReadNextElement(out _) != "name" || engine.ReadNextElement(out _) != "total" || engine.ReadNextElement(out _) == "size")
+                else if (engine.ReadNextElement(out _) != "name" || engine.ReadNextElement(out _) != "total" || engine.ReadNextElement(out _) != "size")
                 {
                     engine.Status = "Xml format error.";
                     engine.Dispose();
@@ -51,7 +51,7 @@ namespace MaFi.WebShareCz.ApiClient
             using (WsFilesReader filesReader = await filesReaderTask)
             {
                 if (engine._disposed == false)
-                    engine._fileIdents = filesReader.Select(f => f.Ident).ToArray();
+                    engine._fileIdents = filesReader.Select(f => f.Ident).ToList();
             }
             return engine;
         }
@@ -69,17 +69,17 @@ namespace MaFi.WebShareCz.ApiClient
             if (_getItemsInvoked)
                 throw new InvalidOperationException($"Enumerate in {nameof(WsItemsReaderEngine)} can call only ones");
             _getItemsInvoked = true;
-            while (AppVersion == 0 && _disposed == false)
+            while (AppVersion == 0 && _disposed == false && _fileIdents.Count > 0)
             {
                 if (_xmlReader.Name == "file")
                 {
-                    WsFilePreview filePreview = CreateFilePriview();
+                    WsFilePreview filePreview = CreateFilePreview();
                     if (_fileIdents.Contains(filePreview.Ident))
                     {
                         filePreview.StartDownload(_httpClient);
+                        _fileIdents.Remove(filePreview.Ident);
                         yield return filePreview;
                     }
-                    break;
                 }
                 else if (_xmlReader.Name == "app_version")
                     AppVersion = _xmlReader.ReadElementContentAsInt();
@@ -106,7 +106,7 @@ namespace MaFi.WebShareCz.ApiClient
             return name;
         }
 
-        private WsFilePreview CreateFilePriview()
+        private WsFilePreview CreateFilePreview()
         {
             XmlReader subReader = _xmlReader.ReadSubtree();
             DataContractSerializer serializer = new DataContractSerializer(typeof(WsFilePreview));

@@ -7,15 +7,20 @@ using MaFi.WebShareCz.ApiClient.Http;
 
 namespace MaFi.WebShareCz.ApiClient.Entities
 {
-    [DataContract(Namespace = "")]
+    [DataContract(Name = "file", Namespace = "")]
     public class WsFilePreview : IDisposable
     {
         private CancellationTokenSource _cts = null;
         private bool _disposed = false;
 
-        public WsFilePreview()
+        internal WsFilePreview()
         {
             JpgData = Task.FromResult<byte[]>(null);
+        }
+
+        internal WsFilePreview(string name) : this()
+        {
+            Name = name;
         }
 
         internal void StartDownload(WsHttpClient httpClient)
@@ -36,12 +41,19 @@ namespace MaFi.WebShareCz.ApiClient.Entities
 
         private async Task<byte[]> GetJpgData(WsHttpClient httpClient)
         {
-            if (_disposed)
+            if (_disposed || string.IsNullOrWhiteSpace(Url))
                 return JpgData.Result;
-            using (_cts = new CancellationTokenSource())
-            using (HttpResponseMessage response = await httpClient.GetData(new Uri(Url), _cts.Token))
+            try
             {
-                return await response.Content.ReadAsByteArrayAsync();
+                using (_cts = new CancellationTokenSource())
+                using (HttpResponseMessage response = await httpClient.GetData(new Uri(Url), _cts.Token))
+                {
+                    return await response.Content.ReadAsByteArrayAsync();
+                }
+            }
+            finally
+            {
+                _cts = null;
             }
         }
 
@@ -49,6 +61,7 @@ namespace MaFi.WebShareCz.ApiClient.Entities
         {
             _disposed = true;
             _cts?.Cancel();
+            _cts = null;
         }
     }
 }

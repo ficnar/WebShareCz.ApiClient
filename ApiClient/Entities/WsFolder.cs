@@ -58,6 +58,8 @@ namespace MaFi.WebShareCz.ApiClient.Entities
         
         public Task<WsFilesPreviewReader> GetFilesPreview()
         {
+            if (PathInfo.FullPath == "/")
+                throw new IOException("Can not get files preview for root folder");
             return ApiClient.GetFolderFilesPreview(this);
         }
 

@@ -5,7 +5,7 @@ using MaFi.WebShareCz.ApiClient.Entities;
 
 namespace MaFi.WebShareCz.ApiClient
 {
-    public class WsFilesPreviewReader : IEnumerable<WsFilePreview>, IDisposable
+    public sealed class WsFilesPreviewReader : IEnumerable<WsFilePreview>, IDisposable
     {
         private readonly WsFilesPreviewReaderEngine _readerEngine;
 

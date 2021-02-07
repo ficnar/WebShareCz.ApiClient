@@ -72,7 +72,7 @@ namespace MaFi.WebShareCz.ApiClient.Entities
 
         public override string ToString()
         {
-            return ApiClient != null && PathInfoGeneric != null ? $"{ApiClient.UserName}/{PathInfoGeneric}" : "[Not initialized]";
+            return ApiClient != null && PathInfoGeneric != null ? $"{ApiClient.UserName}{PathInfoGeneric}" : "[Not initialized]";
         }
 
         public override int GetHashCode()
