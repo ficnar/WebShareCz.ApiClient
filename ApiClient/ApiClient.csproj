@@ -9,6 +9,9 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageProjectUrl>https://github.com/ficnar/WebShareCz.ApiClient</PackageProjectUrl>
     <PackageTags>.net WebShare.cz-Api-Client</PackageTags>
+    <PackageReleaseNotes>- File preview support by new method WsFolder.GetFilesPreview
+- Bug: copy/move file with special chars (for example +) in path not work correctly.
+- StrongName added</PackageReleaseNotes>
   </PropertyGroup>
   
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
