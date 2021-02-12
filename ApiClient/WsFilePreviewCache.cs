@@ -1,7 +1,4 @@
-﻿using System;
-using System.Linq;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
+﻿using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using MaFi.WebShareCz.ApiClient.Entities;
 
@@ -26,75 +23,47 @@ namespace MaFi.WebShareCz.ApiClient
             _folders.Clear();
         }
 
-        private sealed class WsFolderCache : IDisposable
+        private sealed class WsFolderCache
         {
             private readonly ConcurrentDictionary<string, WsFilePreview> _filesPreview = new ConcurrentDictionary<string, WsFilePreview>();
-            private readonly Task<WsFilesPreviewReader> _readerTask;
-            private Task<IEnumerator<WsFilePreview>> _enumeratorTask;
+            private readonly Task _readerTask;
+            private bool _clearRequest = false;
 
             public WsFolderCache(WsFolder folder)
             {
-                _readerTask = folder.GetFilesPreview();
-                _enumeratorTask = ExecuteEnumerator();
+                _readerTask = ExecuteReader(folder);
             }
 
-            private async Task<IEnumerator<WsFilePreview>> ExecuteEnumerator()
+            private async Task ExecuteReader(WsFolder folder)
             {
-                WsFilesPreviewReader reader = await _readerTask;
-                IEnumerator<WsFilePreview> enumerator = reader.GetEnumerator();
-                if (enumerator.MoveNext() == false)
+                using (WsFilesPreviewReader reader = await folder.GetFilesPreview())
                 {
-                    enumerator = null;
-                    reader.Dispose();
+                    foreach (WsFilePreview filePreview in reader)
+                    {
+                        if (_clearRequest)
+                            break;
+                        _filesPreview.AddOrUpdate(filePreview.Name, filePreview, (fileName, filePreviewExists) => filePreviewExists);
+                    }
                 }
-                return enumerator;
             }
 
             public async Task<WsFilePreview> FindFilePreview(string fileName)
             {
-                Dictionary<string, WsFilePreview> newFilesPreview = new Dictionary<string, WsFilePreview>();
-                IEnumerator<WsFilePreview> enumerator = _enumeratorTask == null ? null : await _enumeratorTask;
-                WsFilePreview filePreview = _filesPreview.GetOrAdd(fileName, (fileName) =>
-                {
-                    if (enumerator != null)
-                    {
-                        WsFilePreview newFilePreview = null;
-                        do
-                        {
-                            if (enumerator.Current.Name == fileName)
-                                newFilePreview = enumerator.Current;
-                            else
-                                newFilesPreview.Add(enumerator.Current.Name, enumerator.Current);
-                            if (enumerator.MoveNext() == false)
-                                Dispose();
-                            if (newFilePreview != null)
-                                return newFilePreview;
-                        }
-                        while (_enumeratorTask != null);
-                    }
-                    return new WsFilePreview(fileName);
-                });
-                foreach (var item in newFilesPreview)
-                {
-                    _filesPreview.AddOrUpdate(item.Key, item.Value, (fileName, filePreviewExists) => filePreviewExists);
-                }
-                return filePreview;
+                await _readerTask;
+                if (_filesPreview.TryGetValue(fileName, out WsFilePreview filePreview))
+                    return filePreview;
+                return new WsFilePreview(fileName);
             }
 
             public void Clear()
             {
-                Dispose();
+                _clearRequest = true;
+                _readerTask.GetAwaiter().GetResult();
                 foreach (WsFilePreview filePreview in _filesPreview.Values)
                 {
                     filePreview.Dispose();
                 }
                 _filesPreview.Clear();
-            }
-
-            public void Dispose()
-            {
-                _enumeratorTask = null;
-                _readerTask.GetAwaiter().GetResult().Dispose();
             }
         }
     }

@@ -10,25 +10,29 @@ namespace MaFi.WebShareCz.ApiClient.Entities
     [DataContract(Name = "file", Namespace = "")]
     public class WsFilePreview : IDisposable
     {
+        private Task<byte[]> _jpgData = null;
         private CancellationTokenSource _cts = null;
         private bool _disposed = false;
 
-        internal WsFilePreview()
-        {
-            JpgData = Task.FromResult<byte[]>(null);
-        }
-
-        internal WsFilePreview(string name) : this()
+        internal WsFilePreview(string name)
         {
             Name = name;
         }
 
         internal void StartDownload(WsHttpClient httpClient)
         {
-            JpgData = GetJpgData(httpClient);
+            _jpgData = GetJpgData(httpClient);
         }
 
-        public Task<byte[]> JpgData { get; private set; }
+        public Task<byte[]> JpgData
+        {
+            get
+            {
+                if (_jpgData == null)
+                    _jpgData = Task.FromResult<byte[]>(null);
+                return _jpgData;
+            }
+        }
 
         [DataMember(Name = "ident", Order = 1)]
         public string Ident { get; private set; }
