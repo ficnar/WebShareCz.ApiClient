@@ -69,6 +69,11 @@ namespace MaFi.WebShareCz.ApiClient
 
         public WsFolder PublicRootFolder => _loginInfo == null ? null : _publicRootFolder;
 
+        public Task<bool> Login(string userName, string userPassword)
+        {
+            return Login(userName, new SimpleSecretProvider(userPassword));
+        }
+
         public async Task<bool> Login(string userName, ISecretProvider secretProvider, ISecretPersistor secretPersistor = null)
         {
             if (string.IsNullOrWhiteSpace(userName))
