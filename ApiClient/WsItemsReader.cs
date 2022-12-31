@@ -7,9 +7,9 @@ namespace MaFi.WebShareCz.ApiClient
 {
     public class WsItemsReader : IEnumerable<WsItem>, IDisposable
     {
-        private readonly WsItemsReaderEngine _readerEngine;
+        private readonly WsPagedItemsReaderEngine _readerEngine;
 
-        internal WsItemsReader(WsItemsReaderEngine readerEngine)
+        internal WsItemsReader(WsPagedItemsReaderEngine readerEngine)
         {
             _readerEngine = readerEngine;
         }

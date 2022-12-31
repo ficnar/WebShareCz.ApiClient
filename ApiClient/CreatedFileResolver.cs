@@ -240,7 +240,7 @@ namespace MaFi.WebShareCz.ApiClient
                         {
                             if (cancellationToken.IsCancellationRequested)
                                 return;
-                            using (WsItemsReaderEngine reader = await _apiClient.GetFolderItemsWithoutCreatedFilesInProgress(_folderPath, waitingFileOrNull?.PathInfo.Name ?? ""))
+                            using (IWsItemsReaderEngine reader = await _apiClient.GetFolderItemsWithoutCreatedFilesInProgress(_folderPath, waitingFileOrNull?.PathInfo.Name ?? ""))
                             {
                                 if (cancellationToken.IsCancellationRequested)
                                     return;

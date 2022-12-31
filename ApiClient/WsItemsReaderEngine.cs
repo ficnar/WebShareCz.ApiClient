@@ -10,7 +10,7 @@ using MaFi.WebShareCz.ApiClient.Entities.Internals;
 
 namespace MaFi.WebShareCz.ApiClient
 {
-    internal sealed class WsItemsReaderEngine : Result, IDisposable
+    internal sealed class WsItemsReaderEngine : Result, IWsItemsReaderEngine, IDisposable
     {
         private readonly WsApiClient _apiClient;
         private readonly WsFolderPath _folderPath;
@@ -19,7 +19,6 @@ namespace MaFi.WebShareCz.ApiClient
         private XmlNodeReader _xmlReader;
         private bool _getItemsInvoked = false;
         private bool _disposed = false;
-        private WsItemsReaderEngine _childEngine;
 
         public static async Task<WsItemsReaderEngine> Create(WsApiClient apiClient, HttpResponseMessage responseMessage, WsFolderPath folderPath, bool useCreatedFileResolver)
         {
@@ -91,11 +90,6 @@ namespace MaFi.WebShareCz.ApiClient
             }
         }
 
-        public IEnumerable<WsFile> GetAllFilesRecursive(int depth)
-        {
-            return GetAllFilesRecursive(this, depth, 0);
-        }
-
         public void Dispose()
         {
             _disposed = true;
@@ -104,8 +98,6 @@ namespace MaFi.WebShareCz.ApiClient
             _xmlReader = null;
             _responseMessage?.Dispose();
             _responseMessage = null;
-            _childEngine?.Dispose();
-            _childEngine = null;
         }
 
         private TItemInfo CreateItemInfo<TItemInfo>() where TItemInfo : WsItem
@@ -116,34 +108,6 @@ namespace MaFi.WebShareCz.ApiClient
             item.Init(_apiClient, _folderPath.IsPrivate);
             _xmlReader.Read();
             return item;
-        }
-
-        private IEnumerable<WsFile> GetAllFilesRecursive(WsItemsReaderEngine engine, int depth, int currentDepth)
-        {
-            List<WsFolderPath> folderPaths = new List<WsFolderPath>();
-            foreach (WsItem item in engine.GetItems())
-            {
-                if (item is WsFile file)
-                    yield return file;
-                else if (item is WsFolder folder)
-                    folderPaths.Add(folder.PathInfo);
-            }
-            currentDepth++;
-            if (currentDepth <= depth)
-            {
-                foreach (WsFolderPath folderPath in folderPaths)
-                {
-                    using (WsItemsReaderEngine childEngine = _apiClient.GetItems(folderPath, false, true).Result)
-                    {
-                        _childEngine = childEngine;
-                        foreach (WsFile file in GetAllFilesRecursive(childEngine, depth, currentDepth))
-                        {
-                            yield return file;
-                        }
-                        _childEngine = null;
-                    }
-                }
-            }
         }
     }
 }

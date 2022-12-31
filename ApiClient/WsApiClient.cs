@@ -129,13 +129,13 @@ namespace MaFi.WebShareCz.ApiClient
 
         public async Task<WsItemsReader> GetFolderItems(WsFolderPath folderPath)
         {
-            WsItemsReaderEngine filesResult = await GetItems(folderPath, false, true);
+            WsPagedItemsReaderEngine filesResult = await GetItems(folderPath);
             return new WsItemsReader(filesResult);
         }
 
         public async Task<WsFilesReader> GetFolderAllFilesRecursive(WsFolderPath folderPath, int depth)
         {
-            WsItemsReaderEngine filesResult = await GetItems(folderPath, false, true);
+            WsPagedItemsReaderEngine filesResult = await GetItems(folderPath);
             return new WsFilesReader(filesResult, depth);
         }
 
@@ -159,7 +159,7 @@ namespace MaFi.WebShareCz.ApiClient
         {
             if (folderPath.FullPath == "/")
                 return folderPath.IsPrivate ? PrivateRootFolder : PublicRootFolder;
-            using (WsItemsReaderEngine itemsResult = await GetItems(folderPath.Parent, false, false))
+            using (WsPagedItemsReaderEngine itemsResult = await GetItems(folderPath.Parent, false))
             {
                 foreach (WsItem item in itemsResult.GetItems())
                 {
@@ -377,20 +377,27 @@ namespace MaFi.WebShareCz.ApiClient
             sourceItem.ChangePathInInstance(targetFolder.PathInfo.FullPath + sourceItem.PathInfoGeneric.Name, targetFolder.PathInfo.IsPrivate);
         }
 
-        internal Task<WsItemsReaderEngine> GetFolderItemsWithoutCreatedFilesInProgress(WsFolderPath folderPath, string fileName = "")
+        internal async Task<IWsItemsReaderEngine> GetFolderItemsWithoutCreatedFilesInProgress(WsFolderPath folderPath, string fileName = "")
         {
             if (string.IsNullOrEmpty(fileName))
-                return GetItems(folderPath, false, false);
-            return GetItem(new WsFilePath(folderPath, fileName), false);
+                return await GetItems(folderPath, false);
+            return await GetItem(new WsFilePath(folderPath, fileName), false);
         }
 
-        internal Task<WsItemsReaderEngine> GetItems(WsFolderPath folderPath, bool onlyOne, bool useCreatedFileResolver)
+        internal Task<WsPagedItemsReaderEngine> GetItems(WsFolderPath folderPath, bool useCreatedFileResolver = true)
         {
-            return GetItemsOrItem(folderPath, onlyOne, useCreatedFileResolver);
+            if (folderPath == null)
+                throw new ArgumentNullException(nameof(folderPath));
+            CheckConnected();
+            return WsPagedItemsReaderEngine.Create(this, folderPath, useCreatedFileResolver, (page) => GetItemsReaderEngine(folderPath, false, page));
         }
+
         internal Task<WsItemsReaderEngine> GetItem(WsFilePath filePath, bool useCreatedFileResolver)
         {
-            return GetItemsOrItem(filePath, true, useCreatedFileResolver);
+            if (filePath == null)
+                throw new ArgumentNullException(nameof(filePath));
+            CheckConnected();
+            return GetItemsReaderEngine(filePath, useCreatedFileResolver, null);
         }
 
         internal async Task<WsFilesPreviewReader> GetFolderFilesPreview(WsFolder folder)
@@ -415,12 +422,11 @@ namespace MaFi.WebShareCz.ApiClient
             return new WsFilesPreviewReader(readerEngine);
         }
 
-        private async Task<WsItemsReaderEngine> GetItemsOrItem(WsItemPath path, bool onlyOne, bool useCreatedFileResolver)
+        private async Task<WsItemsReaderEngine> GetItemsReaderEngine(WsItemPath path, bool useCreatedFileResolver, int? page)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            CheckConnected();
             string fileSearch = path is WsFilePath ? path.Name : string.Empty;
+            int offset = page == null ? 0 : page.Value * WsPagedItemsReaderEngine.PAGE_SIZE;
+            int limit = page == null ? 1 : WsPagedItemsReaderEngine.PAGE_SIZE;
             WsItemsReaderEngine readerEngine = await PostFormDataWithLoginRetry(async () =>
             {
                 FormUrlEncodedContent formContent = CreateFormContent(new[]
@@ -430,8 +436,8 @@ namespace MaFi.WebShareCz.ApiClient
                             //new KeyValuePair<string, string>("sort_by", "name"),
                             //new KeyValuePair<string, string>("sort_order", "asc"),
                             //new KeyValuePair<string, string>("sort_order", "asc"),
-                            new KeyValuePair<string, string>("limit", onlyOne ? "1" : "99999999"),
-                            //new KeyValuePair<string, string>("offset", "0")
+                            new KeyValuePair<string, string>("limit", limit.ToString()),
+                            new KeyValuePair<string, string>("offset", offset.ToString()),
                             new KeyValuePair<string, string>("search", fileSearch),
                             });
                 HttpResponseMessage response = await _httpClient.PostFormData(API_FILES_URI, formContent);
@@ -541,19 +547,19 @@ namespace MaFi.WebShareCz.ApiClient
                 throw new InvalidOperationException("The client is not logged in.");
         }
 
-        private void CheckFilePath(string filePath)
-        {
-            if (string.IsNullOrWhiteSpace(filePath) || filePath.StartsWith("/") == false || filePath.TrimEnd().EndsWith("/"))
-                throw new ArgumentException($"Invalid path of file: {filePath ?? "is null"}", nameof(filePath));
-        }
+        //private static void CheckFilePath(string filePath)
+        //{
+        //    if (string.IsNullOrWhiteSpace(filePath) || filePath.StartsWith("/") == false || filePath.TrimEnd().EndsWith("/"))
+        //        throw new ArgumentException($"Invalid path of file: {filePath ?? "is null"}", nameof(filePath));
+        //}
 
-        private void CheckFolderPath(string folderPath)
-        {
-            if (string.IsNullOrWhiteSpace(folderPath) || folderPath.StartsWith("/") == false)
-                throw new ArgumentException($"Invalid path of folder: {folderPath ?? "is null"}", nameof(folderPath));
-        }
+        //private static void CheckFolderPath(string folderPath)
+        //{
+        //    if (string.IsNullOrWhiteSpace(folderPath) || folderPath.StartsWith("/") == false)
+        //        throw new ArgumentException($"Invalid path of folder: {folderPath ?? "is null"}", nameof(folderPath));
+        //}
 
-        private bool CheckResultStatus(Result result)
+        private static bool CheckResultStatus(Result result)
         {
             if (result.Status != ResultStatus.OK)
             {
@@ -598,7 +604,7 @@ namespace MaFi.WebShareCz.ApiClient
             return true;
         }
 
-        private int CalculateBuffer(long streamSize)
+        private static int CalculateBuffer(long streamSize)
         {
             if (streamSize > 10 * 1024 * 1024)
                 return 64 * 1024;

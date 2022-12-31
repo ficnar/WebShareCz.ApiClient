@@ -7,10 +7,10 @@ namespace MaFi.WebShareCz.ApiClient
 {
     public sealed class WsFilesReader : WsItemsReader
     {
-        private readonly WsItemsReaderEngine _readerEngine;
+        private readonly WsPagedItemsReaderEngine _readerEngine;
         private readonly int _depth;
 
-        internal WsFilesReader(WsItemsReaderEngine readerEngine, int depth) : base(readerEngine)
+        internal WsFilesReader(WsPagedItemsReaderEngine readerEngine, int depth) : base(readerEngine)
         {
             _readerEngine = readerEngine;
             _depth = depth;
